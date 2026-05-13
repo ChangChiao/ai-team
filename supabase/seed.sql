@@ -1,0 +1,267 @@
+create extension if not exists pgcrypto;
+
+insert into auth.users (
+  instance_id,
+  id,
+  aud,
+  role,
+  email,
+  encrypted_password,
+  email_confirmed_at,
+  created_at,
+  updated_at,
+  raw_app_meta_data,
+  raw_user_meta_data,
+  is_super_admin
+) values
+  (
+    '00000000-0000-0000-0000-000000000000',
+    '11111111-1111-1111-1111-111111111111',
+    'authenticated',
+    'authenticated',
+    'aki@example.com',
+    crypt('password123', gen_salt('bf')),
+    now(),
+    now(),
+    now(),
+    '{"provider":"email","providers":["email"]}',
+    '{}',
+    false
+  ),
+  (
+    '00000000-0000-0000-0000-000000000000',
+    '22222222-2222-2222-2222-222222222222',
+    'authenticated',
+    'authenticated',
+    'garage@example.com',
+    crypt('password123', gen_salt('bf')),
+    now(),
+    now(),
+    now(),
+    '{"provider":"email","providers":["email"]}',
+    '{}',
+    false
+  ),
+  (
+    '00000000-0000-0000-0000-000000000000',
+    '33333333-3333-3333-3333-333333333333',
+    'authenticated',
+    'authenticated',
+    'resin@example.com',
+    crypt('password123', gen_salt('bf')),
+    now(),
+    now(),
+    now(),
+    '{"provider":"email","providers":["email"]}',
+    '{}',
+    false
+  )
+on conflict (id) do nothing;
+
+insert into public.profiles (
+  id,
+  display_name,
+  slug,
+  bio,
+  location,
+  facebook_url,
+  line_id,
+  created_at
+) values
+  (
+    '11111111-1111-1111-1111-111111111111',
+    'Aki Models',
+    'aki-models',
+    '1:64 and Mini GT seller focused on clean boxes, clear photos, and fast status updates.',
+    'Taipei',
+    'https://facebook.com',
+    'aki-models',
+    '2026-03-18T00:00:00Z'
+  ),
+  (
+    '22222222-2222-2222-2222-222222222222',
+    'Garage 1:64',
+    'garage-164',
+    'Weekly diecast listings, mostly Tomica Limited Vintage and Hot Wheels Premium.',
+    'Taichung',
+    null,
+    'garage164',
+    '2026-04-02T00:00:00Z'
+  ),
+  (
+    '33333333-3333-3333-3333-333333333333',
+    'Resin Desk',
+    'resin-desk',
+    'Premium resin and low-run model car trades. Photos before every deal.',
+    'Kaohsiung',
+    null,
+    null,
+    '2026-04-20T00:00:00Z'
+  )
+on conflict (id) do update set
+  bio = excluded.bio,
+  display_name = excluded.display_name,
+  facebook_url = excluded.facebook_url,
+  line_id = excluded.line_id,
+  location = excluded.location,
+  slug = excluded.slug;
+
+insert into public.listings (
+  id,
+  seller_id,
+  title,
+  brand,
+  model_name,
+  scale,
+  series,
+  car_condition,
+  box_condition,
+  defects,
+  price,
+  currency,
+  listing_mode,
+  location,
+  delivery_preference,
+  contact_method,
+  status,
+  visibility,
+  created_at
+) values
+  (
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1',
+    '11111111-1111-1111-1111-111111111111',
+    'Mini GT Nissan Skyline GT-R R34 Bayside Blue',
+    'Mini GT',
+    'Nissan Skyline GT-R R34',
+    '1:64',
+    'Japan Collector Series',
+    'Excellent',
+    'Good, light corner wear',
+    'No missing parts. Factory paint looks clean under daylight.',
+    1200,
+    'TWD',
+    'sale_or_trade',
+    'Taipei',
+    '7-Eleven store-to-store or meetup',
+    'LINE: aki-models',
+    'available',
+    'public',
+    '2026-05-10T00:00:00Z'
+  ),
+  (
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2',
+    '22222222-2222-2222-2222-222222222222',
+    'Tomica Limited Vintage Neo Honda Civic EF',
+    'Tomica Limited Vintage',
+    'Honda Civic EF',
+    '1:64',
+    'Neo',
+    'Near mint',
+    'Excellent',
+    'Opened once for photos.',
+    980,
+    'TWD',
+    'sale',
+    'Taichung',
+    'Post office or store-to-store',
+    'Facebook Messenger',
+    'reserved',
+    'public',
+    '2026-05-09T00:00:00Z'
+  ),
+  (
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa3',
+    '22222222-2222-2222-2222-222222222222',
+    'Hot Wheels Premium RWB Porsche 930',
+    'Hot Wheels',
+    'RWB Porsche 930',
+    '1:64',
+    'Premium',
+    'Sealed',
+    'Card has soft edge',
+    'Blister intact.',
+    620,
+    'TWD',
+    'sale',
+    'Taichung',
+    'Store-to-store',
+    'LINE: garage164',
+    'available',
+    'public',
+    '2026-05-08T00:00:00Z'
+  ),
+  (
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa4',
+    '33333333-3333-3333-3333-333333333333',
+    'Resin Ferrari F40 LM low-run display model',
+    'Resin Desk',
+    'Ferrari F40 LM',
+    '1:43',
+    'Limited resin',
+    'Excellent',
+    'Display case included',
+    'Small mark on outer acrylic case.',
+    4800,
+    'TWD',
+    'trade',
+    'Kaohsiung',
+    'Meetup preferred',
+    'Email: resin@example.com',
+    'available',
+    'public',
+    '2026-05-07T00:00:00Z'
+  )
+on conflict (id) do update set
+  box_condition = excluded.box_condition,
+  brand = excluded.brand,
+  car_condition = excluded.car_condition,
+  contact_method = excluded.contact_method,
+  defects = excluded.defects,
+  delivery_preference = excluded.delivery_preference,
+  listing_mode = excluded.listing_mode,
+  location = excluded.location,
+  model_name = excluded.model_name,
+  price = excluded.price,
+  scale = excluded.scale,
+  series = excluded.series,
+  status = excluded.status,
+  title = excluded.title,
+  visibility = excluded.visibility;
+
+insert into public.transactions (
+  id,
+  listing_id,
+  seller_id,
+  buyer_email,
+  transaction_type,
+  status,
+  confirmed_at,
+  expires_at,
+  created_at
+) values
+  (
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1',
+    '11111111-1111-1111-1111-111111111111',
+    'buyer-one@example.com',
+    'sale',
+    'confirmed',
+    '2026-05-01T00:00:00Z',
+    '2026-05-08T00:00:00Z',
+    '2026-05-01T00:00:00Z'
+  ),
+  (
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2',
+    '22222222-2222-2222-2222-222222222222',
+    'buyer-two@example.com',
+    'exchange',
+    'confirmed',
+    '2026-04-23T00:00:00Z',
+    '2026-04-30T00:00:00Z',
+    '2026-04-23T00:00:00Z'
+  )
+on conflict (id) do update set
+  confirmed_at = excluded.confirmed_at,
+  status = excluded.status,
+  transaction_type = excluded.transaction_type;

@@ -15,7 +15,8 @@ import type { Listing, Seller, Transaction } from "@/lib/types";
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 type ListingRow = Database["public"]["Tables"]["listings"]["Row"];
 type PhotoRow = Database["public"]["Tables"]["listing_photos"]["Row"];
-type TransactionRow = Database["public"]["Tables"]["transactions"]["Row"];
+type SellerPublicStatsRow = Database["public"]["Views"]["seller_public_stats"]["Row"];
+type SellerPublicTransactionRow = Database["public"]["Views"]["seller_public_transactions"]["Row"];
 
 type ListingResult = {
   listing: Listing;
@@ -25,12 +26,11 @@ type ListingResult = {
 type DbListingWithRelations = ListingRow & {
   listing_photos: Pick<PhotoRow, "alt_text" | "sort_order" | "storage_path">[] | null;
   profiles: ProfileRow | null;
-  transactions: Pick<TransactionRow, "status">[] | null;
 };
 
-type DbSellerWithListings = ProfileRow & {
-  listings: Pick<ListingRow, "id" | "status" | "visibility">[] | null;
-  transactions: Pick<TransactionRow, "status">[] | null;
+type PublicSellerStats = {
+  activeListings: number;
+  confirmedTransactions: number;
 };
 
 const PLACEHOLDER_IMAGE =
@@ -89,6 +89,33 @@ function mockListingResults(source = mockListings): ListingResult[] {
   }));
 }
 
+async function getPublicSellerStats(sellerIds: string[]): Promise<Map<string, PublicSellerStats>> {
+  const uniqueSellerIds = [...new Set(sellerIds)].filter(Boolean);
+  const stats = new Map<string, PublicSellerStats>();
+  if (uniqueSellerIds.length === 0 || !hasSupabaseEnv()) return stats;
+
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("seller_public_stats")
+    .select("seller_id, active_listings, confirmed_transactions")
+    .in("seller_id", uniqueSellerIds);
+
+  if (error || !data) return stats;
+
+  for (const row of data as SellerPublicStatsRow[]) {
+    stats.set(row.seller_id, {
+      activeListings: row.active_listings,
+      confirmedTransactions: row.confirmed_transactions
+    });
+  }
+
+  return stats;
+}
+
+function sellerWithStats(profile: ProfileRow, stats?: PublicSellerStats): Seller {
+  return sellerFromProfile(profile, stats?.activeListings ?? 0, stats?.confirmedTransactions ?? 0);
+}
+
 export async function getLatestListings(limit = 4): Promise<ListingResult[]> {
   if (!hasSupabaseEnv()) return mockListingResults(mockListings.slice(0, limit));
 
@@ -98,8 +125,7 @@ export async function getLatestListings(limit = 4): Promise<ListingResult[]> {
     .select(`
       *,
       profiles!listings_seller_id_fkey(*),
-      listing_photos(storage_path, alt_text, sort_order),
-      transactions(status)
+      listing_photos(storage_path, alt_text, sort_order)
     `)
     .eq("visibility", "public")
     .neq("status", "sold")
@@ -108,14 +134,14 @@ export async function getLatestListings(limit = 4): Promise<ListingResult[]> {
 
   if (error || !data) return mockListingResults(mockListings.slice(0, limit));
 
+  const sellerStats = await getPublicSellerStats((data as DbListingWithRelations[]).map((row) => row.seller_id));
+
   return Promise.all(
     (data as DbListingWithRelations[]).map(async (row) => {
       const sortedPhotos = [...(row.listing_photos ?? [])].sort((a, b) => a.sort_order - b.sort_order);
-      const sellerListingsCount = 0;
-      const confirmedTransactions = (row.transactions ?? []).filter((transaction) => transaction.status === "confirmed").length;
       return {
         listing: listingFromRow(row, await publicImageUrl(sortedPhotos[0]?.storage_path)),
-        seller: row.profiles ? sellerFromProfile(row.profiles, sellerListingsCount, confirmedTransactions) : undefined
+        seller: row.profiles ? sellerWithStats(row.profiles, sellerStats.get(row.seller_id)) : undefined
       };
     })
   );
@@ -130,8 +156,7 @@ export async function getVisibleListings(): Promise<ListingResult[]> {
     .select(`
       *,
       profiles!listings_seller_id_fkey(*),
-      listing_photos(storage_path, alt_text, sort_order),
-      transactions(status)
+      listing_photos(storage_path, alt_text, sort_order)
     `)
     .eq("visibility", "public")
     .neq("status", "sold")
@@ -139,13 +164,14 @@ export async function getVisibleListings(): Promise<ListingResult[]> {
 
   if (error || !data) return mockListingResults(mockListings.filter((listing) => listing.status !== "sold"));
 
+  const sellerStats = await getPublicSellerStats((data as DbListingWithRelations[]).map((row) => row.seller_id));
+
   return Promise.all(
     (data as DbListingWithRelations[]).map(async (row) => {
       const sortedPhotos = [...(row.listing_photos ?? [])].sort((a, b) => a.sort_order - b.sort_order);
-      const confirmedTransactions = (row.transactions ?? []).filter((transaction) => transaction.status === "confirmed").length;
       return {
         listing: listingFromRow(row, await publicImageUrl(sortedPhotos[0]?.storage_path)),
-        seller: row.profiles ? sellerFromProfile(row.profiles, 0, confirmedTransactions) : undefined
+        seller: row.profiles ? sellerWithStats(row.profiles, sellerStats.get(row.seller_id)) : undefined
       };
     })
   );
@@ -157,23 +183,15 @@ export async function getFeaturedSellers(): Promise<Seller[]> {
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("profiles")
-    .select(`
-      *,
-      listings(id, status, visibility),
-      transactions(status)
-    `)
+    .select("*")
     .order("created_at", { ascending: false })
     .limit(8);
 
   if (error || !data) return mockSellers;
 
-  return (data as DbSellerWithListings[]).map((profile) =>
-    sellerFromProfile(
-      profile,
-      (profile.listings ?? []).filter((listing) => listing.visibility === "public" && listing.status !== "sold").length,
-      (profile.transactions ?? []).filter((transaction) => transaction.status === "confirmed").length
-    )
-  );
+  const profiles = data as ProfileRow[];
+  const sellerStats = await getPublicSellerStats(profiles.map((profile) => profile.id));
+  return profiles.map((profile) => sellerWithStats(profile, sellerStats.get(profile.id)));
 }
 
 export async function getListingById(id: string): Promise<ListingResult | null> {
@@ -188,8 +206,7 @@ export async function getListingById(id: string): Promise<ListingResult | null> 
     .select(`
       *,
       profiles!listings_seller_id_fkey(*),
-      listing_photos(storage_path, alt_text, sort_order),
-      transactions(status)
+      listing_photos(storage_path, alt_text, sort_order)
     `)
     .eq("id", id)
     .eq("visibility", "public")
@@ -199,11 +216,11 @@ export async function getListingById(id: string): Promise<ListingResult | null> 
 
   const row = data as DbListingWithRelations;
   const sortedPhotos = [...(row.listing_photos ?? [])].sort((a, b) => a.sort_order - b.sort_order);
-  const confirmedTransactions = (row.transactions ?? []).filter((transaction) => transaction.status === "confirmed").length;
+  const sellerStats = await getPublicSellerStats([row.seller_id]);
 
   return {
     listing: listingFromRow(row, await publicImageUrl(sortedPhotos[0]?.storage_path)),
-    seller: row.profiles ? sellerFromProfile(row.profiles, 0, confirmedTransactions) : undefined
+    seller: row.profiles ? sellerWithStats(row.profiles, sellerStats.get(row.seller_id)) : undefined
   };
 }
 
@@ -233,10 +250,28 @@ export async function getSellerProfile(slug: string): Promise<{
 
   const listings = await getVisibleListings();
   const sellerListings = listings.filter((entry) => entry.listing.sellerSlug === slug);
+  const sellerStats = await getPublicSellerStats([data.id]);
+  const { data: transactionRows } = await supabase
+    .from("seller_public_transactions")
+    .select("*")
+    .eq("seller_id", data.id)
+    .order("confirmed_at", { ascending: false })
+    .limit(20);
+
+  const transactions = ((transactionRows ?? []) as SellerPublicTransactionRow[]).map((transaction) => ({
+    id: transaction.id,
+    listingId: transaction.listing_id,
+    sellerSlug: transaction.seller_slug,
+    listingTitle: transaction.listing_title,
+    transactionType: transaction.transaction_type,
+    status: transaction.status,
+    confirmedAt: transaction.confirmed_at
+  }));
+
   return {
-    seller: sellerFromProfile(data, sellerListings.length, 0),
+    seller: sellerWithStats(data, sellerStats.get(data.id)),
     listings: sellerListings,
-    transactions: []
+    transactions
   };
 }
 
@@ -253,22 +288,14 @@ export async function getCurrentSellerProfile(): Promise<Seller | undefined> {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select(`
-      *,
-      listings(id, status, visibility),
-      transactions(status)
-    `)
+    .select("*")
     .eq("id", user.id)
     .single();
 
   if (error || !data) return undefined;
 
-  const profile = data as DbSellerWithListings;
-  return sellerFromProfile(
-    profile,
-    (profile.listings ?? []).filter((listing) => listing.visibility === "public" && listing.status !== "sold").length,
-    (profile.transactions ?? []).filter((transaction) => transaction.status === "confirmed").length
-  );
+  const sellerStats = await getPublicSellerStats([data.id]);
+  return sellerWithStats(data, sellerStats.get(data.id));
 }
 
 export async function getCurrentSellerListings(): Promise<ListingResult[]> {
@@ -287,21 +314,21 @@ export async function getCurrentSellerListings(): Promise<ListingResult[]> {
     .select(`
       *,
       profiles!listings_seller_id_fkey(*),
-      listing_photos(storage_path, alt_text, sort_order),
-      transactions(status)
+      listing_photos(storage_path, alt_text, sort_order)
     `)
     .eq("seller_id", user.id)
     .order("updated_at", { ascending: false });
 
   if (error || !data) return [];
 
+  const sellerStats = await getPublicSellerStats([user.id]);
+
   return Promise.all(
     (data as DbListingWithRelations[]).map(async (row) => {
       const sortedPhotos = [...(row.listing_photos ?? [])].sort((a, b) => a.sort_order - b.sort_order);
-      const confirmedTransactions = (row.transactions ?? []).filter((transaction) => transaction.status === "confirmed").length;
       return {
         listing: listingFromRow(row, await publicImageUrl(sortedPhotos[0]?.storage_path)),
-        seller: row.profiles ? sellerFromProfile(row.profiles, 0, confirmedTransactions) : undefined
+        seller: row.profiles ? sellerWithStats(row.profiles, sellerStats.get(row.seller_id)) : undefined
       };
     })
   );

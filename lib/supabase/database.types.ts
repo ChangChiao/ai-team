@@ -156,7 +156,34 @@ export type Database = {
         Relationships: [];
       };
     };
-    Views: Record<string, never>;
+    Views: {
+      seller_public_stats: {
+        Row: {
+          active_listings: number;
+          confirmed_transactions: number;
+          seller_id: string;
+          seller_slug: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      seller_public_transactions: {
+        Row: {
+          confirmed_at: string;
+          id: string;
+          listing_id: string;
+          listing_title: string;
+          seller_id: string;
+          seller_slug: string;
+          status: "confirmed";
+          transaction_type: "sale" | "exchange";
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+    };
     Functions: Record<string, never>;
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

@@ -22,12 +22,6 @@ export async function createListingAction(
   _previousState: CreateListingState,
   formData: FormData
 ): Promise<CreateListingState> {
-  if (!hasSupabaseEnv()) {
-    return {
-      formError: "Supabase is not configured yet. Copy .env.example to .env.local and add your project credentials."
-    };
-  }
-
   const parsed = listingSchema.safeParse({
     title: formData.get("title"),
     brand: formData.get("brand"),
@@ -56,6 +50,12 @@ export async function createListingAction(
       fieldErrors: {
         photos: photoErrors
       }
+    };
+  }
+
+  if (!hasSupabaseEnv()) {
+    return {
+      formError: "Supabase is not configured yet. Copy .env.example to .env.local and add your project credentials."
     };
   }
 

@@ -12,12 +12,6 @@ export type ProfileState = {
 };
 
 export async function saveProfileAction(_previousState: ProfileState, formData: FormData): Promise<ProfileState> {
-  if (!hasSupabaseEnv()) {
-    return {
-      formError: "Supabase is not configured yet. Copy .env.example to .env.local and add your project credentials."
-    };
-  }
-
   const parsed = profileSchema.safeParse({
     bio: formData.get("bio"),
     displayName: formData.get("displayName"),
@@ -30,6 +24,12 @@ export async function saveProfileAction(_previousState: ProfileState, formData: 
   if (!parsed.success) {
     return {
       fieldErrors: parsed.error.flatten().fieldErrors
+    };
+  }
+
+  if (!hasSupabaseEnv()) {
+    return {
+      formError: "Supabase is not configured yet. Copy .env.example to .env.local and add your project credentials."
     };
   }
 

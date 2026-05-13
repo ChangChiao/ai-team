@@ -21,6 +21,8 @@ The first vertical slice is a web-first marketplace shell with static demo data.
 - Transaction confirmation link creation and buyer confirmation flow
 - Transaction confirmation token hashing
 - Supabase schema migration with RLS policies
+- Public seller trust stats through aggregate Supabase views
+- Playwright E2E coverage for public marketplace and seller workspace flows
 
 ## Tech Stack
 
@@ -50,6 +52,7 @@ http://127.0.0.1:3000
 pnpm run typecheck
 pnpm test
 pnpm run build
+pnpm run test:e2e
 ```
 
 ## Supabase
@@ -73,6 +76,12 @@ Apply migrations from:
 supabase/migrations/
 ```
 
+For local development, seed demo sellers, listings, and confirmed transactions from:
+
+```text
+supabase/seed.sql
+```
+
 See [supabase/README.md](supabase/README.md) for the schema and RLS expectations.
 
 ## Current Boundary
@@ -81,9 +90,11 @@ Public marketplace pages read through `lib/data/marketplace.ts`. If Supabase env
 
 The login and seller profile forms are wired to Supabase. Listing creation validates input, uploads 1-8 photos to Supabase Storage, creates `listing_photos` rows, and publishes the listing once a signed-in user has a seller profile.
 
+Public trust signals use `seller_public_stats` and `seller_public_transactions` views, so the public UI can show aggregate trust and confirmed transaction history without exposing buyer emails or confirmation tokens.
+
 Next implementation step:
 
-1. Add Playwright E2E tests for login/profile/listing creation.
-2. Add local Supabase seed data for end-to-end development.
+1. Connect a real Supabase project or local Supabase stack and run the migration plus seed.
+2. Verify magic-link auth and listing photo upload against the live Storage bucket.
 3. Add edit listing form for existing listings.
 4. Add seller-facing transaction resend/cancel actions.

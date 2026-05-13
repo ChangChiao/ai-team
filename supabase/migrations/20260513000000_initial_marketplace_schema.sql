@@ -141,6 +141,43 @@ create index listing_events_listing_type_created_idx
 create index listing_events_seller_type_created_idx
   on public.listing_events (seller_id, event_type, created_at desc);
 
+create view public.seller_public_stats as
+select
+  profiles.id as seller_id,
+  profiles.slug as seller_slug,
+  count(distinct listings.id) filter (
+    where listings.visibility = 'public'
+      and listings.status != 'sold'
+  )::int as active_listings,
+  count(distinct transactions.id) filter (
+    where transactions.status = 'confirmed'
+      and transactions.confirmed_at is not null
+  )::int as confirmed_transactions
+from public.profiles
+left join public.listings
+  on listings.seller_id = profiles.id
+left join public.transactions
+  on transactions.seller_id = profiles.id
+group by profiles.id, profiles.slug;
+
+create view public.seller_public_transactions as
+select
+  transactions.id,
+  transactions.listing_id,
+  transactions.seller_id,
+  profiles.slug as seller_slug,
+  listings.title as listing_title,
+  transactions.transaction_type,
+  transactions.status,
+  transactions.confirmed_at
+from public.transactions
+join public.profiles
+  on profiles.id = transactions.seller_id
+join public.listings
+  on listings.id = transactions.listing_id
+where transactions.status = 'confirmed'
+  and transactions.confirmed_at is not null;
+
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
   'listing-photos',
@@ -280,3 +317,6 @@ using (
   bucket_id = 'listing-photos'
   and split_part(name, '/', 1) = (select auth.uid())::text
 );
+
+grant select on public.seller_public_stats to anon, authenticated;
+grant select on public.seller_public_transactions to anon, authenticated;
