@@ -1,6 +1,8 @@
-import { transactions } from "@/lib/mock-data";
+import { getCurrentSellerTransactions } from "@/lib/data/transactions";
 
-export default function TransactionsPage() {
+export default async function TransactionsPage() {
+  const transactions = await getCurrentSellerTransactions();
+
   return (
     <>
       <section className="page-heading">
@@ -9,15 +11,27 @@ export default function TransactionsPage() {
         <p className="muted">MVP confirmation proves a transaction happened. It is not a rating or buyer protection claim.</p>
       </section>
       <section className="panel">
-        {transactions.map((transaction) => (
-          <div className="seller-row" key={transaction.id}>
-            <div>
-              <strong>{transaction.listingTitle}</strong>
-              <p className="muted">{transaction.transactionType} · {transaction.status}</p>
+        {transactions.length > 0 ? (
+          transactions.map((transaction) => (
+            <div className="seller-row" key={transaction.id}>
+              <div>
+                <strong>{transaction.listingTitle}</strong>
+                <p className="muted">
+                  {transaction.transactionType} · {transaction.status}
+                  {transaction.confirmedAt ? ` · confirmed ${transaction.confirmedAt}` : ""}
+                </p>
+              </div>
+              <span className={transaction.status === "confirmed" ? "status-badge available" : "status-badge reserved"}>
+                {transaction.status}
+              </span>
             </div>
-            <span className="status-badge available">Confirmed</span>
+          ))
+        ) : (
+          <div className="empty-state">
+            <h2>No transactions yet</h2>
+            <p className="muted">Create a confirmation link from a listing after a sale or exchange.</p>
           </div>
-        ))}
+        )}
       </section>
     </>
   );

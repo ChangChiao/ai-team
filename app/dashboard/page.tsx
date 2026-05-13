@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { ListingCard } from "@/components/listing-card";
-import { listings } from "@/lib/mock-data";
+import { getCurrentSellerListings } from "@/lib/data/marketplace";
 
-export default function DashboardPage() {
-  const activeListings = listings.filter((listing) => listing.status === "available");
-  const reservedListings = listings.filter((listing) => listing.status === "reserved");
+export default async function DashboardPage() {
+  const listingResults = await getCurrentSellerListings();
+  const activeListings = listingResults.filter(({ listing }) => listing.status === "available");
+  const reservedListings = listingResults.filter(({ listing }) => listing.status === "reserved");
 
   return (
     <>
@@ -33,8 +34,8 @@ export default function DashboardPage() {
           </Link>
         </div>
         <div className="listing-grid" style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
-          {reservedListings.concat(activeListings).slice(0, 2).map((listing) => (
-            <ListingCard key={listing.id} listing={listing} />
+          {reservedListings.concat(activeListings).slice(0, 2).map(({ listing, seller }) => (
+            <ListingCard key={listing.id} listing={listing} seller={seller} />
           ))}
         </div>
       </section>

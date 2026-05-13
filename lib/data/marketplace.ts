@@ -68,6 +68,7 @@ function listingFromRow(row: DbListingWithRelations, imageUrl: string): Listing 
     deliveryPreference: row.delivery_preference ?? "Ask seller",
     contactMethod: row.contact_method,
     status: row.status,
+    visibility: row.visibility,
     imageUrl,
     createdAt: row.created_at.slice(0, 10)
   };
@@ -267,5 +268,41 @@ export async function getCurrentSellerProfile(): Promise<Seller | undefined> {
     profile,
     (profile.listings ?? []).filter((listing) => listing.visibility === "public" && listing.status !== "sold").length,
     (profile.transactions ?? []).filter((transaction) => transaction.status === "confirmed").length
+  );
+}
+
+export async function getCurrentSellerListings(): Promise<ListingResult[]> {
+  if (!hasSupabaseEnv()) return mockListingResults(mockListings);
+
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+    error: userError
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) return [];
+
+  const { data, error } = await supabase
+    .from("listings")
+    .select(`
+      *,
+      profiles!listings_seller_id_fkey(*),
+      listing_photos(storage_path, alt_text, sort_order),
+      transactions(status)
+    `)
+    .eq("seller_id", user.id)
+    .order("updated_at", { ascending: false });
+
+  if (error || !data) return [];
+
+  return Promise.all(
+    (data as DbListingWithRelations[]).map(async (row) => {
+      const sortedPhotos = [...(row.listing_photos ?? [])].sort((a, b) => a.sort_order - b.sort_order);
+      const confirmedTransactions = (row.transactions ?? []).filter((transaction) => transaction.status === "confirmed").length;
+      return {
+        listing: listingFromRow(row, await publicImageUrl(sortedPhotos[0]?.storage_path)),
+        seller: row.profiles ? sellerFromProfile(row.profiles, 0, confirmedTransactions) : undefined
+      };
+    })
   );
 }

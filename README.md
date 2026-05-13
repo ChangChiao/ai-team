@@ -11,12 +11,14 @@ The first vertical slice is a web-first marketplace shell with static demo data.
 - Listing detail page
 - Seller profile page
 - Seller dashboard
+- Dashboard listing management for status and archive/restore
 - New listing form UI
 - Transaction confirmation page
 - Listing validation schema
 - Magic-link login flow
 - Seller profile create/update form
 - Supabase Storage upload for listing photos during listing creation
+- Transaction confirmation link creation and buyer confirmation flow
 - Transaction confirmation token hashing
 - Supabase schema migration with RLS policies
 
@@ -81,7 +83,7 @@ The login and seller profile forms are wired to Supabase. Listing creation valid
 
 Next implementation step:
 
-1. Add dashboard listing management backed by Supabase.
-2. Add transaction creation and buyer confirmation backed by Supabase.
-3. Add Playwright E2E tests for login/profile/listing creation.
-4. Add local Supabase seed data for end-to-end development.
+1. Add Playwright E2E tests for login/profile/listing creation.
+2. Add local Supabase seed data for end-to-end development.
+3. Add edit listing form for existing listings.
+4. Add seller-facing transaction resend/cancel actions.

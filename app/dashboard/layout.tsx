@@ -9,6 +9,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <Link href="/dashboard" aria-current="page">
             Overview
           </Link>
+          <Link href="/dashboard/listings">Listings</Link>
           <Link href="/dashboard/listings/new">Add listing</Link>
           <Link href="/dashboard/transactions">Transactions</Link>
           <Link href="/dashboard/profile">Profile</Link>

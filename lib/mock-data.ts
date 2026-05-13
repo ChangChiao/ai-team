@@ -50,6 +50,7 @@ export const listings: Listing[] = [
     deliveryPreference: "7-Eleven store-to-store or meetup",
     contactMethod: "LINE: aki-models",
     status: "available",
+    visibility: "public",
     imageUrl: "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=900&q=80",
     createdAt: "2026-05-10"
   },
@@ -71,6 +72,7 @@ export const listings: Listing[] = [
     deliveryPreference: "Post office or store-to-store",
     contactMethod: "Facebook Messenger",
     status: "reserved",
+    visibility: "public",
     imageUrl: "https://images.unsplash.com/photo-1603386329225-868f9b1ee6c9?auto=format&fit=crop&w=900&q=80",
     createdAt: "2026-05-09"
   },
@@ -92,6 +94,7 @@ export const listings: Listing[] = [
     deliveryPreference: "Store-to-store",
     contactMethod: "LINE: garage164",
     status: "available",
+    visibility: "public",
     imageUrl: "https://images.unsplash.com/photo-1542362567-b07e54358753?auto=format&fit=crop&w=900&q=80",
     createdAt: "2026-05-08"
   },
@@ -113,6 +116,7 @@ export const listings: Listing[] = [
     deliveryPreference: "Meetup preferred",
     contactMethod: "Email: resin@example.com",
     status: "available",
+    visibility: "public",
     imageUrl: "https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&w=900&q=80",
     createdAt: "2026-05-07"
   }

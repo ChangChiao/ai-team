@@ -1,5 +1,7 @@
 export type ListingStatus = "available" | "reserved" | "sold";
 
+export type ListingVisibility = "draft" | "public" | "archived";
+
 export type ListingMode = "sale" | "trade" | "sale_or_trade";
 
 export type Listing = {
@@ -20,6 +22,7 @@ export type Listing = {
   deliveryPreference: string;
   contactMethod: string;
   status: ListingStatus;
+  visibility: ListingVisibility;
   imageUrl: string;
   createdAt: string;
 };
