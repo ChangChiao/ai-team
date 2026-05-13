@@ -1,16 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ListingCard } from "@/components/listing-card";
-import { getSeller, getSellerListings, getSellerTransactions } from "@/lib/mock-data";
+import { getSellerProfile } from "@/lib/data/marketplace";
 
 export default async function SellerPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const seller = getSeller(slug);
+  const result = await getSellerProfile(slug);
 
-  if (!seller) notFound();
+  if (!result) notFound();
 
-  const sellerListings = getSellerListings(slug);
-  const sellerTransactions = getSellerTransactions(slug);
+  const { seller, listings: sellerListings, transactions: sellerTransactions } = result;
 
   return (
     <div className="page-shell">
@@ -41,8 +40,8 @@ export default async function SellerPage({ params }: { params: Promise<{ slug: s
           </Link>
         </div>
         <div className="listing-grid">
-          {sellerListings.map((listing) => (
-            <ListingCard key={listing.id} listing={listing} />
+          {sellerListings.map(({ listing, seller: listingSeller }) => (
+            <ListingCard key={listing.id} listing={listing} seller={listingSeller} />
           ))}
         </div>
       </section>

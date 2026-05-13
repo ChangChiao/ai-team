@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { ListingCard } from "@/components/listing-card";
-import { listings, sellers } from "@/lib/mock-data";
+import { getFeaturedSellers, getLatestListings } from "@/lib/data/marketplace";
 
-export default function HomePage() {
-  const latestListings = listings.slice(0, 4);
+export default async function HomePage() {
+  const latestListings = await getLatestListings(4);
+  const sellers = await getFeaturedSellers();
 
   return (
     <div className="page-shell">
@@ -54,8 +55,8 @@ export default function HomePage() {
         </div>
         {latestListings.length > 0 ? (
           <div className="listing-grid">
-            {latestListings.map((listing) => (
-              <ListingCard key={listing.id} listing={listing} />
+            {latestListings.map(({ listing, seller }) => (
+              <ListingCard key={listing.id} listing={listing} seller={seller} />
             ))}
           </div>
         ) : (

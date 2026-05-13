@@ -1,9 +1,7 @@
 import Link from "next/link";
-import { getSeller } from "@/lib/mock-data";
+import type { Seller } from "@/lib/types";
 
-export function SellerTrustPanel({ sellerSlug }: { sellerSlug: string }) {
-  const seller = getSeller(sellerSlug);
-
+export function SellerTrustPanel({ seller }: { seller?: Seller }) {
   if (!seller) {
     return (
       <section className="panel" aria-labelledby="seller-heading">

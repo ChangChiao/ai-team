@@ -1,9 +1,9 @@
 import { EmptyState } from "@/components/empty-state";
 import { ListingCard } from "@/components/listing-card";
-import { listings } from "@/lib/mock-data";
+import { getVisibleListings } from "@/lib/data/marketplace";
 
-export default function ListingsPage() {
-  const visibleListings = listings.filter((listing) => listing.status !== "sold");
+export default async function ListingsPage() {
+  const visibleListings = await getVisibleListings();
 
   return (
     <div className="page-shell">
@@ -63,8 +63,8 @@ export default function ListingsPage() {
           </div>
           {visibleListings.length > 0 ? (
             <div className="listing-grid" style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
-              {visibleListings.map((listing) => (
-                <ListingCard key={listing.id} listing={listing} />
+              {visibleListings.map(({ listing, seller }) => (
+                <ListingCard key={listing.id} listing={listing} seller={seller} />
               ))}
             </div>
           ) : (

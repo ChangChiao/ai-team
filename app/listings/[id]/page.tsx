@@ -2,13 +2,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SellerTrustPanel } from "@/components/seller-trust-panel";
 import { formatListingMode, formatPrice, formatStatus, statusClass } from "@/lib/format";
-import { getListing } from "@/lib/mock-data";
+import { getListingById } from "@/lib/data/marketplace";
 
 export default async function ListingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const listing = getListing(id);
+  const result = await getListingById(id);
 
-  if (!listing) notFound();
+  if (!result) notFound();
+
+  const { listing, seller } = result;
 
   return (
     <div className="page-shell">
@@ -75,7 +77,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
               </button>
             </div>
           </section>
-          <SellerTrustPanel sellerSlug={listing.sellerSlug} />
+          <SellerTrustPanel seller={seller} />
         </aside>
       </div>
     </div>

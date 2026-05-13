@@ -1,11 +1,8 @@
 import Link from "next/link";
 import { formatListingMode, formatPrice, formatStatus, statusClass } from "@/lib/format";
-import { getSeller } from "@/lib/mock-data";
-import type { Listing } from "@/lib/types";
+import type { Listing, Seller } from "@/lib/types";
 
-export function ListingCard({ listing }: { listing: Listing }) {
-  const seller = getSeller(listing.sellerSlug);
-
+export function ListingCard({ listing, seller }: { listing: Listing; seller?: Seller }) {
   return (
     <article className="listing-card">
       <Link href={`/listings/${listing.id}`} aria-label={`View ${listing.title}`}>
